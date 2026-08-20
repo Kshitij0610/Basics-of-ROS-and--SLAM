@@ -21,10 +21,25 @@ Create a map of an **unknown environment** while simultaneously determining the 
 
 ```
 Practical_4_SLAM/
-└── Practical_4_Writeup.md   ← Original writeup with all commands and context
+├── launch_slam.sh           ← ★ ONE-CLICK launcher (opens all 4 terminals in tmux)
+├── save_map.sh              ← Saves the completed map as .yaml + .pgm
+├── kill_slam.sh             ← Cleanly shuts down all SLAM processes
+├── teleop_base.py           ← Custom keyboard driver with tunable speed
+├── slam_params.yaml         ← Custom SLAM Toolbox parameters (resolution, range, etc.)
+├── slam_rviz.rviz           ← Pre-configured RViz layout (Map + LiDAR + Robot)
+└── Practical_4_Writeup.md   ← Original step-by-step writeup
 ```
 
-> **Note:** Practical 4 uses **packages installed from `apt`** (TurtleBot3, SLAM Toolbox). There is no custom robot description to write — the objective is to learn to operate and configure existing ROS 2 tools. All commands below are the complete workflow.
+### File-by-File Explanation
+
+| File | What it does |
+|------|-------------|
+| `launch_slam.sh` | Creates a `tmux` session with 4 windows: Gazebo, SLAM Toolbox, RViz, and Teleop. Run this first. |
+| `save_map.sh` | Calls `nav2_map_server map_saver_cli` to write `<name>.yaml` + `<name>.pgm` to `~/maps/`. Accepts an optional name argument. |
+| `kill_slam.sh` | Kills the tmux session and all leftover `gzserver`/`gzclient` processes. Run this when done or if anything freezes. |
+| `teleop_base.py` | A self-contained Python node that reads keypresses and publishes to `/cmd_vel`. More configurable than the default `turtlebot3_teleop`. |
+| `slam_params.yaml` | Overrides default SLAM Toolbox settings. Every parameter is commented with what changing it does. Pass to `online_async_launch.py` via `slam_params_file:=`. |
+| `slam_rviz.rviz` | Pre-built RViz config — opens with Map, RobotModel, and LaserScan displays already added. Loaded automatically by `launch_slam.sh`. |
 
 ---
 
