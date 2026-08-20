@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!--
+  robot_arm.urdf.xacro
+  ====================
+  Main Xacro entry point for Practical 2: Standalone 3-DOF Robot Arm.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_arm">
+
+    <xacro:include filename="common_properties.xacro" />
+    <xacro:include filename="robot_arm_core_standalone.xacro" />
+
+</robot>

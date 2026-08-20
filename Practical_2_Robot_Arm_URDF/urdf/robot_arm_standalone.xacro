@@ -6,9 +6,8 @@
   It includes common material/inertia helpers and the arm geometry.
   The arm_base_link is attached directly to "world" here so it stands alone.
 
-  CUSTOMISABLE PARAMETERS
-  -----------------------
-  See robot_arm_core.xacro for all size/colour values.
+  CUSTOMISABLE PARAMETERS:
+  See robot_arm_core_standalone.xacro for all size/colour values.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_arm_standalone">
 
