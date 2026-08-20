@@ -1,19 +1,18 @@
 # Practical 3 — Attach Robot Arm to Base & Simulate in Gazebo 🤖🦾
 
 ## Objective
-Combine the mobile robot base (Practical 1) and the 3-DOF arm (Practical 2) into a single **mobile manipulator**, load it into the **Gazebo physics simulator**, and control both the base (drive it around) and the arm (move joints) using keyboard teleoperation.
+Combine the mobile robot base (Practical 1) and the 3-DOF arm (Practical 2) into a single **mobile manipulator**, simulate it in the **Gazebo physics simulator**, and control both the mobile base and the arm via keyboard teleoperation.
 
 ---
 
 ## 📦 Software Required
 
-| Software | Purpose | Install |
-|----------|---------|---------|
+| Software | Purpose | Installation |
+|----------|---------|--------------|
 | ROS 2 Humble | Robot middleware | `sudo apt install ros-humble-desktop` |
-| Gazebo (Classic) | Physics simulation | `sudo apt install ros-humble-gazebo-ros-pkgs` |
-| `gazebo_ros2_control` | Bridge Gazebo ↔ ros2_control | `sudo apt install ros-humble-gazebo-ros2-control` |
-| `ros2_control` + `ros2_controllers` | Hardware abstraction + trajectory control | `sudo apt install ros-humble-ros2-control ros-humble-ros2-controllers` |
-| `teleop_twist_keyboard` | Drive the base via keyboard | `sudo apt install ros-humble-teleop-twist-keyboard` |
+| Gazebo (Classic) | Physics simulation engine | `sudo apt install ros-humble-gazebo-ros-pkgs` |
+| `gazebo_ros2_control` | Bridge Gazebo ↔ `ros2_control` | `sudo apt install ros-humble-gazebo-ros2-control` |
+| `ros2_control` + `ros2_controllers` | Joint trajectory control | `sudo apt install ros-humble-ros2-control ros-humble-ros2-controllers` |
 
 ---
 
@@ -21,178 +20,105 @@ Combine the mobile robot base (Practical 1) and the 3-DOF arm (Practical 2) into
 
 ```
 Practical_3_Gazebo_Simulation/
+├── package.xml                          ← ROS 2 package declaration format 3
+├── CMakeLists.txt                       ← Ament CMake build configuration
 ├── urdf/
-│   ├── robot_arm.urdf.xacro     ← Root file (entry-point — includes everything)
-│   ├── common_properties.xacro  ← Colours + inertia macros
-│   ├── mobile_base.xacro        ← 4-wheel base + Gazebo diff-drive plugin
-│   ├── robot_arm_core.xacro     ← 3-DOF arm geometry (attaches to base)
-│   └── robot_arm_control.xacro  ← ros2_control interfaces for Gazebo
+│   ├── robot_arm.urdf.xacro             ← Root Xacro file (includes all modules)
+│   ├── common_properties.xacro          ← Shared colors + inertia math macros
+│   ├── mobile_base.xacro                ← 4-wheel chassis + Gazebo diff-drive plugin
+│   ├── robot_arm_core.xacro             ← 3-DOF arm geometry attached to base_link
+│   └── robot_arm_control.xacro          ← ros2_control hardware interfaces & plugin
 ├── launch/
-│   └── gazebo.launch.py         ← Launches Gazebo + spawns robot + controllers
+│   └── gazebo.launch.py                 ← Portable launch file (Gazebo + Spawners)
 ├── config/
-│   └── ros2_controllers.yaml    ← Controller definitions (arm trajectory controller)
+│   └── ros2_controllers.yaml            ← JointTrajectoryController configuration
 └── scripts/
-    └── arm_teleop.py            ← Keyboard control for the 3 arm joints
+    ├── launch_sim.sh                    ← ★ One-click launcher (runs Gazebo + Teleops)
+    ├── kill_sim.sh                      ← Clean simulation shutdown script
+    ├── combined_teleop.py               ← Single-terminal keyboard driver (Base + Arm)
+    ├── base_teleop.py                   ← Base driving script
+    └── arm_teleop.py                    ← Arm joint control script
 ```
 
-### File-by-File Explanation
+---
 
-#### `urdf/robot_arm.urdf.xacro` — Root Entry-Point
-The "glue" file. It uses `<xacro:include>` to pull all four xacro files together into one complete robot description. You normally never edit this file.
+## 🤖 Robot Structure & Arm Mounting
 
-#### `urdf/common_properties.xacro` — Shared Definitions
-Defines all colours and inertia formula macros so they are not duplicated. Edit here to add new colours.
-
-#### `urdf/mobile_base.xacro` — The Robot's Body & Wheels
-| Element | What it defines |
-|---------|----------------|
-| `base_link` | Rectangular chassis (orange box) |
-| `wheel` macro | Reusable template instantiated 4× for each wheel |
-| `lidar` link | Red LiDAR cylinder positioned forward on the chassis |
-| Gazebo `skid_steer_drive` plugin | Makes the wheels respond to `cmd_vel` topic commands (keyboard driving) |
-
-#### `urdf/robot_arm_core.xacro` — The Arm Geometry
-Identical to Practical 2 but the `arm_base_joint` now attaches to `base_link` (the chassis) instead of `world`. This is the key change that "mounts" the arm on the mobile base.
-
-```xml
-<!-- arm_base_joint — this line connects the arm TO the base -->
-<joint name="arm_base_joint" type="fixed">
-    <parent link="base_link"/>    ← was "world" in Practical 2
-    <child link="arm_base_link"/>
-    <origin xyz="-0.1 0 0.2" rpy="0 0 0"/>  ← arm offset from chassis centre
-</joint>
 ```
-
-#### `urdf/robot_arm_control.xacro` — Hardware Interface for Gazebo
-Tells `ros2_control` which joints are controllable and their position limits. Also loads the `gazebo_ros2_control` Gazebo plugin.
-
-#### `launch/gazebo.launch.py` — Launch Orchestrator
-| What it starts | Details |
-|----------------|---------|
-| Gazebo (empty world) | Physics engine |
-| `robot_state_publisher` | Converts URDF → TF transforms |
-| `spawn_entity.py` | Drops the robot into the Gazebo world |
-| `joint_state_broadcaster` | Publishes current joint positions |
-| `arm_controller` | Trajectory controller that moves the 3 arm joints |
-
-#### `config/ros2_controllers.yaml` — Controller Configuration
-```yaml
-arm_controller:
-  ros__parameters:
-    joints: [joint_1, joint_2, joint_3]
-    command_interfaces: [position]
-    state_interfaces:  [position, velocity]
+base_footprint (ground frame)
+  └── base_link  [orange chassis box]
+        ├── front_left_wheel, front_right_wheel, back_left_wheel, back_right_wheel
+        ├── lidar  [red cylinder, forward mounted]
+        └── arm_base_link  [black box pedestal mounted at xyz="-0.1 0 0.2"]
+              └── joint_1 (revolute — YAW)
+                    └── link_1  [purple cylinder]
+                          └── joint_2 (revolute — PITCH)
+                                └── link_2  [orange cylinder]
+                                      └── joint_3 (revolute — PITCH)
+                                            └── link_3  [red cylinder]
+                                                  └── end_effector_link  [yellow sphere]
 ```
-This configures the `joint_trajectory_controller` which accepts position goals for each arm joint.
-
-#### `scripts/arm_teleop.py` — Arm Keyboard Controller
-
-| Key | Action |
-|-----|--------|
-| `1` / `2` | joint_1 (Yaw) − / + |
-| `3` / `4` | joint_2 (Pitch1) − / + |
-| `5` / `6` | joint_3 (Pitch2) − / + |
-| `q` | Quit |
-
-Each keypress sends a `JointTrajectory` message to `/arm_controller/joint_trajectory` with a 0.5-second execution time.
 
 ---
 
 ## 🎨 Customisable Parameters
 
-### 1. Arm Mounting Position on the Chassis (`robot_arm_core.xacro`)
+### 1. Arm Mounting Position (`urdf/robot_arm_core.xacro`)
 ```xml
-<origin xyz="-0.1 0 0.2" rpy="0 0 0"/>
-<!--           ↑    ↑  ↑
-         X back  Y  Z height above chassis
-    Try: "0 0 0.2"  → arm at centre of chassis
-         "0.2 0 0.2" → arm at front  -->
+<joint name="arm_base_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_base_link"/>
+    <origin xyz="-0.1 0 0.2" rpy="0 0 0"/>  <!-- change xyz="-0.1 0 0.2" to move arm location -->
+</joint>
 ```
 
-### 2. Chassis Dimensions (`mobile_base.xacro`)
+### 2. Base Dimensions & Wheel Speeds (`urdf/mobile_base.xacro`)
 ```xml
-<box size="0.65 0.45 0.2"/>
-<!--       Length Width Height — same as Practical 1 -->
+<box size="0.65 0.45 0.2"/>  <!-- Chassis Length Width Height -->
+<max_wheel_torque>20</max_wheel_torque>  <!-- Wheel motor torque -->
 ```
 
-### 3. Wheel Size & Separation (`mobile_base.xacro`)
-```xml
-<!-- Wheel geometry -->
-<cylinder radius="0.08" length="0.04"/>
-
-<!-- Wheel positions — controlled by macros x_reflect & y_reflect -->
-<origin xyz="${x_reflect * 0.2} ${y_reflect * 0.245} 0" .../>
-<!--                            ↑                ↑
-                           0.2 = half wheelbase  0.245 = half track width  -->
-
-<!-- Also update the Gazebo plugin to match: -->
-<wheel_separation>0.49</wheel_separation>  <!-- 2 × 0.245 -->
-<wheel_diameter>0.16</wheel_diameter>      <!-- 2 × 0.08  -->
-```
-
-### 4. Drive Torque & Speed (Skid-Steer Plugin in `mobile_base.xacro`)
-```xml
-<max_wheel_torque>20</max_wheel_torque>           <!-- Nm — increase for heavier robot -->
-<max_wheel_acceleration>1.0</max_wheel_acceleration>  <!-- rad/s² -->
-```
-
-### 5. Arm Joint Step Size (`scripts/arm_teleop.py`)
-```python
-self.step_size = 0.1   # radians per keypress — try 0.05 for fine control
-```
-
-### 6. Controller Update Rate (`config/ros2_controllers.yaml`)
+### 3. Controller Settings (`config/ros2_controllers.yaml`)
 ```yaml
-update_rate: 50  # Hz — try 100 for smoother arm motion
+update_rate: 50  # Controller loop rate (Hz)
 ```
-
-### 7. Arm Link Dimensions (`robot_arm_core.xacro`)
-See Practical 2 README — same parameters apply here.
 
 ---
 
 ## 🏃 How to Run
 
-### Step 1 — Build the Package
+### Method 1: One-Click Launcher (Recommended)
 ```bash
-cd ~/ros2_ws
-# Copy (or symlink) the folder into src/ as robot_arm_description
-cp -r ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation ./src/robot_arm_description
+cd ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts
+chmod +x launch_sim.sh kill_sim.sh
+./launch_sim.sh
 ```
 
-### Step 3 — Build the Package
+### Method 2: Direct Launch (No build required!)
 ```bash
+# Terminal 1 — Gazebo Simulation
+cd ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation
+source /opt/ros/humble/setup.bash
+ros2 launch launch/gazebo.launch.py
+
+# Terminal 2 — Combined Base + Arm Teleoperation
+python3 scripts/combined_teleop.py
+```
+
+### Method 3: Building in a ROS 2 Workspace
+```bash
+# 1. Copy package into your ROS 2 workspace src directory
+cd ~/ros2_ws/src
+cp -r ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation ./practical_3_gazebo_simulation
+
+# 2. Build with colcon
 cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
-colcon build --packages-select robot_arm_description
+colcon build --packages-select practical_3_gazebo_simulation
+
+# 3. Launch
 source install/setup.bash
-```
-
-### Step 4 — Launch Simulation & Controls
-
-**Terminal 1 — Gazebo Simulation:**
-```bash
-ros2 launch robot_arm_description gazebo.launch.py
-```
-
-**Terminal 2 — Arm Teleoperation:**
-```bash
-python3 ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts/arm_teleop.py
-```
-
-### Step 3 — Drive the Base (Keyboard)
-```bash
-# Terminal 2
-export GAZEBO_MODEL_DATABASE_URI=""   # prevents online model download freeze
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-# Use W/A/S/D to drive the base
-```
-
-### Step 4 — Move the Arm (Keyboard)
-```bash
-# Terminal 3
-python3 ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts/arm_teleop.py
-# Use 1–6 to move arm joints
+ros2 launch practical_3_gazebo_simulation gazebo.launch.py
 ```
 
 ---
@@ -202,41 +128,36 @@ python3 ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts/arm_tele
 ```mermaid
 graph TD
     subgraph URDF ["URDF Description (Xacro)"]
-        ROOT["robot_arm.urdf.xacro\n(Root)"]
-        CP["common_properties.xacro\n(Colors + Inertia)"]
-        MB["mobile_base.xacro\n(Chassis + Wheels + Drive Plugin)"]
-        AC["robot_arm_core.xacro\n(3-DOF Arm Geometry)"]
-        CTRL["robot_arm_control.xacro\n(ros2_control Interfaces)"]
+        ROOT["robot_arm.urdf.xacro"]
+        CP["common_properties.xacro"]
+        MB["mobile_base.xacro"]
+        AC["robot_arm_core.xacro"]
+        CTRL["robot_arm_control.xacro"]
         ROOT --> CP & MB & AC & CTRL
     end
 
     subgraph Gazebo ["Gazebo Physics Engine"]
         GZ["Gazebo World"]
-        DD["skid_steer_drive plugin\n(responds to /cmd_vel)"]
-        GZC["gazebo_ros2_control plugin\n(runs arm_controller)"]
+        DD["libgazebo_ros_diff_drive.so"]
+        GZC["libgazebo_ros2_control.so"]
     end
 
     subgraph ROS2 ["ROS 2 Nodes"]
         RSP["robot_state_publisher"]
-        JSB["joint_state_broadcaster"]
-        ARM["arm_controller\n(JointTrajectoryController)"]
-        TK["teleop_twist_keyboard\n(publishes /cmd_vel)"]
-        AT["arm_teleop.py\n(publishes /arm_controller/joint_trajectory)"]
+        ARM["arm_controller"]
+        COMB["combined_teleop.py"]
     end
 
-    ROOT -->|processed URDF| RSP
-    RSP -->|/robot_description| GZ
+    ROOT -->|robot_description| RSP
+    RSP --> GZ
     GZ --> DD & GZC
-    DD -->|wheel velocity| GZ
-    TK -->|/cmd_vel| DD
-    GZC --> ARM & JSB
-    AT -->|trajectory goals| ARM
-    JSB -->|/joint_states| RSP
+    COMB -->|/cmd_vel| DD
+    COMB -->|/arm_controller/joint_trajectory| ARM
+    GZC --> ARM
 ```
 
 ---
 
 ## ✅ Expected Output
-- Gazebo opens with the orange mobile manipulator (4 wheels + 3-DOF arm).
-- Driving via `teleop_twist_keyboard` physically moves the robot in the simulation.
-- Running `arm_teleop.py` and pressing keys 1–6 visibly rotates each arm segment.
+- Gazebo opens rendering the mobile manipulator robot.
+- Running teleop allows driving the base using `w/a/s/d` and moving arm joints using `1–6`.

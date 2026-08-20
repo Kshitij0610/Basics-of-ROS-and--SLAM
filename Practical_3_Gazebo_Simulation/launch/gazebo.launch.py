@@ -1,5 +1,5 @@
 import os
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, PackageNotFoundError
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -7,8 +7,15 @@ from launch_ros.actions import Node
 import xacro
 
 def generate_launch_description():
-    pkg_name = 'robot_arm_description'
-    pkg_path = get_package_share_directory(pkg_name)
+    pkg_name = 'practical_3_gazebo_simulation'
+    
+    # ── Portable Package Share Resolution ─────────────────────────────────────
+    # Tries finding installed package via colcon build share directory.
+    # Fallback to local path so launch works directly without colcon build!
+    try:
+        pkg_path = get_package_share_directory(pkg_name)
+    except PackageNotFoundError:
+        pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
     xacro_file = os.path.join(pkg_path, 'urdf', 'robot_arm.urdf.xacro')
     robot_description_config = xacro.process_file(xacro_file)

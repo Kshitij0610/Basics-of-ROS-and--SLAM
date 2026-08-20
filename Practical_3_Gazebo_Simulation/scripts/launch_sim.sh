@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-#  launch_sim.sh — One-click launcher for Practical 3 (Gazebo + Arm + Base)
+#  launch_sim.sh — Portable One-click launcher for Practical 3 (Gazebo + Arm + Base)
 # =============================================================================
 #  Opens a tmux session with 3 windows so you don't have to manage terminals.
 #
@@ -12,17 +12,11 @@
 #    0 — Gazebo  : physics simulation + robot spawn + controllers
 #    1 — ArmTele : arm_teleop.py (keys 1–6 to move arm joints)
 #    2 — BaseTele: base_teleop.py (w/a/s/d to drive wheels)
-#
-#  TIP: Use combined_teleop.py instead to control both from one terminal.
-#
-#  CUSTOMISABLE:
-#    SESSION_NAME → change the tmux session name
-#    PKG_PATH     → set this if your workspace is not ~/ros2_ws
 # =============================================================================
 
 SESSION_NAME="practical3_sim"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PKG_PATH="$HOME/ros2_ws"    # ★ CHANGE if your workspace is elsewhere
+PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Prevent Gazebo from hanging on online model downloads
 export GAZEBO_MODEL_DATABASE_URI=""
@@ -40,9 +34,9 @@ echo "🚀 Launching Practical 3 — Gazebo Mobile Manipulator Simulation..."
 tmux new-session -d -s "$SESSION_NAME" -n "Gazebo"
 tmux send-keys -t "$SESSION_NAME:Gazebo" \
     "source /opt/ros/humble/setup.bash && \
-     source $PKG_PATH/install/setup.bash && \
+     if [ -f \$HOME/ros2_ws/install/setup.bash ]; then source \$HOME/ros2_ws/install/setup.bash; fi && \
      echo '⏳ Launching Gazebo simulation...' && \
-     ros2 launch robot_arm_description gazebo.launch.py" C-m
+     ros2 launch practical_3_gazebo_simulation gazebo.launch.py 2>/dev/null || ros2 launch '$PKG_DIR/launch/gazebo.launch.py'" C-m
 
 echo "✅ Window 1/3 — Gazebo launched. Waiting 15s for controllers to start..."
 sleep 15
@@ -51,9 +45,9 @@ sleep 15
 tmux new-window -t "$SESSION_NAME" -n "ArmTele"
 tmux send-keys -t "$SESSION_NAME:ArmTele" \
     "source /opt/ros/humble/setup.bash && \
-     source $PKG_PATH/install/setup.bash && \
+     if [ -f \$HOME/ros2_ws/install/setup.bash ]; then source \$HOME/ros2_ws/install/setup.bash; fi && \
      echo '🦾 Arm Teleop Ready! Keys: 1/2=J1  3/4=J2  5/6=J3  q=quit' && \
-     python3 $SCRIPT_DIR/arm_teleop.py" C-m
+     python3 '$SCRIPT_DIR/arm_teleop.py'" C-m
 
 echo "✅ Window 2/3 — Arm teleop ready."
 sleep 1
@@ -63,7 +57,7 @@ tmux new-window -t "$SESSION_NAME" -n "BaseTele"
 tmux send-keys -t "$SESSION_NAME:BaseTele" \
     "source /opt/ros/humble/setup.bash && \
      echo '🚗 Base Teleop Ready! Keys: w/a/s/d=drive  x=stop  Ctrl+C=quit' && \
-     python3 $SCRIPT_DIR/base_teleop.py" C-m
+     python3 '$SCRIPT_DIR/base_teleop.py'" C-m
 
 echo "✅ Window 3/3 — Base teleop ready."
 
