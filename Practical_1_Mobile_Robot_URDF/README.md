@@ -109,7 +109,7 @@ source /opt/ros/humble/setup.bash
 
 # Launch — replace the path if you saved the file elsewhere
 ros2 launch urdf_tutorial display.launch.py \
-    model:=/home/kshitij/Basics-of-ROS-and-SLAM/Practical_1_Mobile_Robot_URDF/my_robot.urdf
+    model:=/home/kshitij/Basics-of-ROS-and--SLAM/Practical_1_Mobile_Robot_URDF/my_robot.urdf
 ```
 
 ### Step 3 — Visualise

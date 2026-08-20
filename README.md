@@ -9,7 +9,7 @@ A complete, beginner-to-intermediate journey through ROS 2 Humble robotics devel
 ## 📂 Repository Structure
 
 ```
-Basics-of-ROS-and-SLAM/
+Basics-of-ROS-and--SLAM/
 │
 ├── Practical_1_Mobile_Robot_URDF/      ← Single URDF file; visualise in RViz
 │

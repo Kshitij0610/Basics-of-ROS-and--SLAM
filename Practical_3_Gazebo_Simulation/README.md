@@ -157,19 +157,28 @@ See Practical 2 README — same parameters apply here.
 ```bash
 cd ~/ros2_ws
 # Copy (or symlink) the folder into src/ as robot_arm_description
-cp -r ~/Basics-of-ROS-and-SLAM/Practical_3_Gazebo_Simulation ./src/robot_arm_description
+cp -r ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation ./src/robot_arm_description
+```
 
+### Step 3 — Build the Package
+```bash
+cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 colcon build --packages-select robot_arm_description
 source install/setup.bash
 ```
 
-### Step 2 — Launch Gazebo Simulation
+### Step 4 — Launch Simulation & Controls
+
+**Terminal 1 — Gazebo Simulation:**
 ```bash
-# Terminal 1
 ros2 launch robot_arm_description gazebo.launch.py
 ```
-Wait until you see: `[INFO] [spawner]: Configured and activated arm_controller`
+
+**Terminal 2 — Arm Teleoperation:**
+```bash
+python3 ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts/arm_teleop.py
+```
 
 ### Step 3 — Drive the Base (Keyboard)
 ```bash
@@ -182,7 +191,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ### Step 4 — Move the Arm (Keyboard)
 ```bash
 # Terminal 3
-python3 ~/Basics-of-ROS-and-SLAM/Practical_3_Gazebo_Simulation/scripts/arm_teleop.py
+python3 ~/Basics-of-ROS-and--SLAM/Practical_3_Gazebo_Simulation/scripts/arm_teleop.py
 # Use 1–6 to move arm joints
 ```
 

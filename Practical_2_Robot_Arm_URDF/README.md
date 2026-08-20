@@ -102,7 +102,7 @@ Available in `common_properties.xacro`: `purple`, `orange`, `red`, `yellow`, `bl
 ### Method 1: Direct Launch (No build required!)
 You can launch directly from this folder without building:
 ```bash
-cd ~/Basics-of-ROS-and-SLAM/Practical_2_Robot_Arm_URDF
+cd ~/Basics-of-ROS-and--SLAM/Practical_2_Robot_Arm_URDF
 source /opt/ros/humble/setup.bash
 ros2 launch launch/display.launch.py
 ```
@@ -111,7 +111,7 @@ ros2 launch launch/display.launch.py
 ```bash
 # 1. Copy package into your ROS 2 workspace src directory
 cd ~/ros2_ws/src
-cp -r ~/Basics-of-ROS-and-SLAM/Practical_2_Robot_Arm_URDF ./practical_2_robot_arm_urdf
+cp -r ~/Basics-of-ROS-and--SLAM/Practical_2_Robot_Arm_URDF ./practical_2_robot_arm_urdf
 
 # 2. Build with colcon
 cd ~/ros2_ws
