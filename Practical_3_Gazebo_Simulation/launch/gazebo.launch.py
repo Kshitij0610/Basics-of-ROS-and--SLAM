@@ -18,7 +18,13 @@ def generate_launch_description():
         pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
     xacro_file = os.path.join(pkg_path, 'urdf', 'robot_arm.urdf.xacro')
-    robot_description_config = xacro.process_file(xacro_file)
+    controllers_yaml_file = os.path.join(pkg_path, 'config', 'ros2_controllers.yaml')
+    
+    # Process Xacro passing absolute path to controllers YAML directly
+    robot_description_config = xacro.process_file(
+        xacro_file,
+        mappings={'controllers_yaml': controllers_yaml_file}
+    )
     robot_description = {'robot_description': robot_description_config.toxml()}
 
     robot_state_publisher_node = Node(

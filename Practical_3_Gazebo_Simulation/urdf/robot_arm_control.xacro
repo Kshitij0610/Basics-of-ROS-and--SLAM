@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
     
+    <!-- Configurable controllers YAML path passed dynamically from launch file -->
+    <xacro:arg name="controllers_yaml" default="$(find practical_3_gazebo_simulation)/config/ros2_controllers.yaml"/>
+
     <ros2_control name="GazeboSystem" type="system">
         <hardware>
             <plugin>gazebo_ros2_control/GazeboSystem</plugin>
@@ -36,7 +39,7 @@
 
     <gazebo>
         <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
-            <parameters>$(find practical_3_gazebo_simulation)/config/ros2_controllers.yaml</parameters>
+            <parameters>$(arg controllers_yaml)</parameters>
         </plugin>
     </gazebo>
 
